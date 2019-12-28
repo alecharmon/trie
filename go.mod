@@ -1,3 +1,3 @@
-module github.com/dghubble/trie
+module github.com/alecharmon/trie
 
 go 1.12
