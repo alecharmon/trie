@@ -54,6 +54,11 @@ func TestPathTrieWalk(t *testing.T) {
 	testTrieWalk(t, trie)
 }
 
+func TestPathTrieKeyWalk(t *testing.T) {
+	trie := NewPathTrie()
+	testTrieWalkByKey(t, trie)
+}
+
 func TestPathTrieWalkError(t *testing.T) {
 	trie := NewPathTrie()
 	testTrieWalkError(t, trie)
@@ -215,6 +220,48 @@ func testTrieWalk(t *testing.T, trie Trier) {
 		if walkedCount != 1 {
 			t.Errorf("expected key %s to be walked exactly once, got %v", key, walkedCount)
 		}
+	}
+}
+
+func testTrieWalkByKey(t *testing.T, trie *PathTrie) {
+	table := map[string]interface{}{
+		"fish":                 0,
+		"/cat":                 1,
+		"/dog":                 2,
+		"/cats":                3,
+		"/caterpillar":         4,
+		"/notes":               30,
+		"/notes/new":           31,
+		"/notes/id":            32,
+		"/notes/id/#1":         77,
+		"/notes/id/#1/heading": 78,
+		"/notes/id/#2":         79,
+		"/notes/id/#2/heading": 80,
+	}
+	// key -> times walked
+	walked := make(map[string]int)
+	for key := range table {
+		walked[key] = 0
+	}
+
+	for key, value := range table {
+		if isNew := trie.Put(key, value); !isNew {
+			t.Errorf("expected key %s to be missing", key)
+		}
+	}
+
+	sum := 0
+	walker := func(key string, value interface{}) error {
+		sum += value.(int)
+		return nil
+	}
+
+	if err := trie.WalkKey("/notes/id/#1", walker); err != nil {
+		t.Errorf("expected error nil, got %v", err)
+	}
+
+	if sum != 139 {
+		t.Errorf("Expected sum of 139, got %v", sum)
 	}
 }
 

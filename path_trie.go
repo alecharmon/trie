@@ -102,7 +102,7 @@ func (trie *PathTrie) Delete(key string) bool {
 // an error, the walk is aborted.
 // The traversal is depth first with no guaranteed order.
 func (trie *PathTrie) Walk(walker WalkFunc) error {
-	return trie.WalkKey("", walker)
+	return trie.walk("", walker)
 }
 
 // PathTrie node and the part string key of the child the path descends into.
@@ -113,16 +113,43 @@ type nodeStr struct {
 
 // WalkKey iterates over a key by it segmented parts and calls walker on each segement
 // starts at root and works its way down
-func (trie *PathTrie) WalkKey(key string, walker WalkFunc) error {
+func (trie *PathTrie) walk(key string, walker WalkFunc) error {
 	if trie.value != nil {
 		if err := walker(key, trie.value); err != nil {
 			return err
 		}
 	}
 	for part, child := range trie.children {
-		if err := child.WalkKey(key+part, walker); err != nil {
+		if err := child.walk(key+part, walker); err != nil {
 			return err
 		}
+	}
+	return nil
+}
+
+// WalkKey iterates over a key by it segmented parts and calls walker on each segement
+// starts at root and works its way down
+func (trie *PathTrie) WalkKey(key string, walker WalkFunc) error {
+	var found bool
+	node := trie
+	if node == nil {
+		return nil
+	}
+	for part, i := trie.segmenter(key, 0); ; part, i = trie.segmenter(key, i) {
+		node, found = node.children[part]
+		if node == nil {
+			break
+		}
+
+		if !found {
+			break
+		}
+
+		if i == -1 {
+			i = len(key)
+		}
+
+		walker(key[:i], node.value)
 	}
 	return nil
 }
