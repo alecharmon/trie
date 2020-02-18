@@ -1,5 +1,9 @@
 package trie
 
+import (
+	"strings"
+)
+
 // PathTrie is a trie of paths with string keys and interface{} values.
 
 // PathTrie is a trie of string keys and interface{} values. Internal nodes
@@ -136,6 +140,21 @@ func (trie *PathTrie) WalkKey(key string, walker WalkFunc) error {
 		return nil
 	}
 	for part, i := trie.segmenter(key, 0); ; part, i = trie.segmenter(key, i) {
+		if i == -1 {
+			i = len(key)
+		}
+
+		//This lets us walk across wild cards, @see TestPathTrieKeyWalkWildcard
+		if len(part) > 1 && part[len(part)-1] == '*' {
+			for childKey, child := range node.children {
+				if strings.HasPrefix(childKey, part[:len(part)-1]) {
+					walker(key[:i], child.value)
+				}
+			}
+			return nil
+		}
+
+		//Normal traversal
 		node, found = node.children[part]
 		if node == nil {
 			break
@@ -143,10 +162,6 @@ func (trie *PathTrie) WalkKey(key string, walker WalkFunc) error {
 
 		if !found {
 			break
-		}
-
-		if i == -1 {
-			i = len(key)
 		}
 
 		walker(key[:i], node.value)
