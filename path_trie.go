@@ -154,6 +154,11 @@ func (trie *PathTrie) WalkKey(key string, walker WalkFunc) error {
 			return nil
 		}
 
+		// We want to follow "/*" paths too as part of our syntax
+		if node, found := node.children["/*"]; found {
+			walker(key[:i], node.value)
+		}
+
 		//Normal traversal
 		node, found = node.children[part]
 		if node == nil {
